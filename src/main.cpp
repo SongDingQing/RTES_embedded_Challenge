@@ -25,11 +25,11 @@ int main() {
   while(1) {
     if(flag){
       cs=0;
-      spi.write(0xE8);//X_L
+      spi.write(0xA8);//X_L
       uint8_t xl =spi.write(0x00);
       cs=1;
       cs=0;
-      spi.write(0xE9);
+      spi.write(0xA9);
       int8_t xh =spi.write(0x00);
       cs=1;
       int16_t data= xh*256+xl-100;
