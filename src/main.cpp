@@ -13,6 +13,18 @@ void setMode() {
   spi.write(0xCF);
   cs=1;
 }
+int16_t readData(int code){
+      cs=0;
+      spi.write(code);
+      uint8_t tempL = spi.write(0x00);
+      cs=1;
+      cs=0;
+      spi.write(code+1);
+      uint8_t tempH = spi.write(0x00);
+      cs=1;
+      int16_t temp= tempH*256+tempL;
+      return temp;
+}
 int main() {
   cs=1;
   setMode();
@@ -24,17 +36,11 @@ int main() {
 	t.attach(&setFlag,0.05);
   while(1) {
     if(flag){
-      cs=0;
-      spi.write(0xA8);//X_L
-      uint8_t xl =spi.write(0x00);
-      cs=1;
-      cs=0;
-      spi.write(0xA9);
-      int8_t xh =spi.write(0x00);
-      cs=1;
-      int16_t data= xh*256+xl-100;
-      printf("Output on x give: %d\n",data);
-      flag=0;
+      int16_t dataX=readData(0xA8);
+      int16_t dataY=readData(0xAA);
+      int16_t dataZ=readData(0xAC);
+      printf("Output on x,y,z give: %7d----%7d---%7d\n",dataX,dataY,dataZ);
+      flag=0;// reset flag
     }
     
   }
