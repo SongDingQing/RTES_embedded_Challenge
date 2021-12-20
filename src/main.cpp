@@ -1,6 +1,8 @@
 #include <mbed.h>
 
 volatile int flag = 0;
+volatile int steps = 0;
+volatile int state = 0;//indicate the moving have started
 SPI spi(PF_9, PF_8, PF_7); // mosi, miso, sclk
 DigitalOut cs(PC_1);
 
@@ -37,11 +39,24 @@ int main() {
   while(1) {
     if(flag){
       int16_t dataX=readData(0xA8);
-      int16_t dataY=readData(0xAA);
-      int16_t dataZ=readData(0xAC);
-      printf("Output on x,y,z give: %7d----%7d---%7d\n",dataX,dataY,dataZ);
+      //printf("Output on x give: %d\n",dataX);
+      if(dataX<-12000&&state==0){
+        state=1;
+      }
+      if(dataX>12000&&state==1){
+        state=0;
+        steps++;
+        //printf("The steps moved: %d\n",steps);
+        int distance =steps*7;
+        printf("the distance moved:%d.%dm\n",distance/10,distance%10);
+      }
       flag=0;// reset flag
     }
     
   }
 }
+/* this is the test to see other two inputs
+      int16_t dataY=readData(0xAA);
+      int16_t dataZ=readData(0xAC);
+      printf("Output on x,y,z give: %7d----%7d---%7d\n",dataX,dataY,dataZ);
+      */
