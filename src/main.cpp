@@ -23,6 +23,7 @@ int main() {
   spi.frequency(100000);
 	Ticker t;
 	t.attach(&setFlag,0.25);
+  //t.attach(&setFlag,0.05);
   uint8_t iter = 0;
 
   while(1) {
@@ -42,6 +43,20 @@ int main() {
         //printf("Output data: %d\n",dataSet);
         break;
       }
+/**- Method 2
+      if(dataX<-12000&&state==0){
+        state=1;
+      }
+      if(dataX>12000&&state==1){
+        state=0;
+        steps++;
+        //printf("The steps moved: %d\n",steps);
+        int distance =steps*7;
+        printf("the distance moved:%d.%dm\n",distance/10,distance%10);
+      }
+**/
+
+
       flag = 0;
     }
     
