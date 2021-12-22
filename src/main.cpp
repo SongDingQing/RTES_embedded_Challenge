@@ -9,8 +9,9 @@ DigitalOut cs(PC_1);
 
 // Initialize for method 1:
 int8_t fullTime = 30;
-int8_t size = fullTime / 0.25;
-int16_t dataSet[120];
+int8_t size = fullTime / 0.05;
+int16_t dataSet[600];
+double totalDist = 0;
 
 // Initialize for method 2:
 int steps = 0;
@@ -19,9 +20,11 @@ int state = 0;//indicate the moving have started
 
 void setFlag();
 void setMode();
+void acc(int16_t tempData);
 int16_t readData(int code);
-void calculateDistance2(int16_t dataX);
 double calculateDistance1();
+void calculateDistance2(int16_t dataX);
+
 
 int main() {
   cs=1;
@@ -29,35 +32,31 @@ int main() {
   spi.format(8,3);
   spi.frequency(100000);
 	Ticker t;
-  // Used for method 1
+  // Used for method 2
   //t.attach(&setFlag,0.05);
 
-  // Used for method 2
-  t.attach(&setFlag,0.25);
-  uint8_t iter = 0;
+  // Used for method 1
+  t.attach(&setFlag,0.05);
+  uint16_t iter = 0;
 
   while(1) {
     if(flag){
-      int16_t dataX = readData(0xA8);
-      printf("Output temp data: %d\n",dataX);
-      dataSet[iter] = dataX;
-      iter = iter + 1;
+      int16_t dataZ = readData(0xAC);
+      //printf("Output temp data: %d\n",dataZ);
+      acc(dataZ);
+      //dataSet[iter] = dataZ;
+      //iter = iter + 1;
 
-    // Method 1: count steps and calculate final distance using stride.
-    calculateDistance2(dataX);
-
-    //Method 2: convert measured data to forward movement velocity and traveled distance.
-      if (iter == 120){
-          uint8_t i;
-        	//for(i = 0; i < 120; i++){
-          //  printf("%d\n", dataSet[i]);
-	        //}
-          double distance = calculateDistance1();
-          printf("The final distance is: %d\n", (int)distance);
+    //Method 1: convert measured data to forward movement velocity and traveled distance.
+      //if (iter == 600){  
+        //double distance = calculateDistance1();
+        //printf("The final distance is: %d\n", (int)distance);
         //printf("Output data: %d\n",dataSet);
-        break;
-      }
+      //  break;
+      //}
 
+    // Method 2: count steps and calculate final distance using stride.
+    //calculateDistance2(dataX);
 
 
       flag = 0;
@@ -82,11 +81,11 @@ void setMode() {
 */
 int16_t readData(int code){
   cs = 0;
-  spi.write(0xE8);//X_L
+  spi.write(code);//X_L
   uint8_t xl =spi.write(0x00);
   cs = 1;
   cs = 0;
-  spi.write(0xE9);
+  spi.write(code+1);
   int8_t xh =spi.write(0x00);
   cs = 1;
   int16_t data= xh*256+xl;
@@ -94,37 +93,34 @@ int16_t readData(int code){
 }
 
 /*
-IDEA1:
+IDEA1: - For method 1
 Gyroscope is a device that produces a positive-going digital output for counter-clockwise rotation around the axis considered.
 Since it's could measure the angular, we could convert the raw data into angular velocity.
 According to datasheet, the sensitivity of the gyroscope. When FS = 245 dps and typical values at +25 °C,
 the transfer factor is 8.75 mdps/digit. (Page 10 of the datasheet). After transformation, we could get the velocity and distance.
 - 20% - Ability to convert measured data to forward movement velocity
 - 20% - Ability to calculate distance traveled
-
 */
 
 double calculateDistance1(){
   double realData;
-  double tmpDistance;
   double totalDist = 0;
-  for (int i = 0; i < 120; i++){
+  for (int i = 0; i < 600; i++){
     dataSet[i] = abs(dataSet[i]);
     if (dataSet[i] > 5000){
       // Transform to angle velocity. 
-      realData = (0.00875 * dataSet[i]);
-
-      totalDist = totalDist + ((double) 0.25) * (realData / 360) * 2 * PI * 0.4;
+      realData = (0.00875 * (dataSet[i] + 63));
+      totalDist = totalDist + ((double) 0.05) * (realData / 360) * 2 * PI * 0.4;
     }
   }
   return totalDist;
 }
 
+
 /*
-IDEA2:
+IDEA2: - For method 2
 Count steps and calculate final distance using stride.
 */
-
 
 void calculateDistance2(int16_t dataX){
   if(dataX<-12000&&state==0){
@@ -138,8 +134,13 @@ void calculateDistance2(int16_t dataX){
       printf("the distance moved:%d.%dm\n",distance/10,distance%10);
     }
 }
-
-
-
-
-
+/*
+IDEA3: - For method 3
+calculate distance during runtime using gyroscope's reading.
+*/
+void acc(int16_t tempData){
+  if(abs(tempData)>3000){
+    totalDist+=(double)(0.00875*0.05*abs(tempData+63)/360*2*PI*1.015);
+    printf("Distance: %d\n",(int)totalDist);
+  }
+}
