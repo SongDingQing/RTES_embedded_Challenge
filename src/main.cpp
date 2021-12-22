@@ -23,6 +23,7 @@ int main() {
   spi.frequency(100000);
 	Ticker t;
 	t.attach(&setFlag,0.25);
+  //t.attach(&setFlag,0.05);
   uint8_t iter = 0;
 
   while(1) {
